@@ -115,6 +115,7 @@ sub	scan_directory {
 sub	read_file {
 	my($item) = @_;
 
+	print "Reading $item\n";
 }
 
 sub	read_url {
