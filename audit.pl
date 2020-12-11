@@ -2,7 +2,11 @@
 
 use strict;
 use LWP::Simple;
+use HTML::Parser;
+use CSS::DOM;
 
+#TODO: Get rid of this?
+use HTML::DOM;
 #################################################################################################
 
 my $FOLLOW = 0;
@@ -16,6 +20,11 @@ my %RESULTS;
 my @DISPLAY_IDS;
 my @DISPLAY_CLASSES;
 my @DISPLAY_LIST;
+
+# These may go away...
+
+my %FILES_USING_SELECTORS;
+my %SELECTORS_IN_FILES;
 
 #################################################################################################
 
@@ -147,19 +156,31 @@ sub	read_url {
 sub process_content {
 	my($name, $content) = @_;
 
-	print "Processing $name\n";
-
 	if (is_css_file($name)) {
 		process_css($name, $content);
 		return;
 	}
 
-	process_html($name, $content);
+	if (is_html_file($name)) {
+		process_html($name, $content);
+		return;
+	}
 }
 
 sub	generate_report {
 
 	return;
+}
+
+sub 	is_html_file {
+	my($name) = @_;
+
+	#TODO: This will need to be expanded in a loop.
+	if ($name =~ m/\.html$/i) {
+		return 1;
+	}
+
+	return 0;
 }
 
 sub 	is_css_file {
@@ -175,6 +196,20 @@ sub 	is_css_file {
 
 sub 	process_css {
 	my($name, $content) = @_;
+	my($css);
+
+	print "Processing $name as css file.\n";
+
+	$css = CSS::DOM::parse($content);
+	my @rules = $css->cssRules;
+
+	foreach my $rule (@rules) {
+		if (ref($rule) eq "SCALAR") {
+			process_css_selector($name, $rule->selectorText);
+			process_css_body($name, $rule->cssText);
+		}
+	}
+
 
 	return 1;
 }
@@ -182,5 +217,53 @@ sub 	process_css {
 sub 	process_html {
 	my($name, $content) = @_;
 
+	print "Processing $name as html file.\n";
 	return 1;
+}
+
+sub	process_css_selector {
+	my($name, $selectors) = @_;
+
+	foreach my $selector (split(/\s+/, $selectors)) {
+		if ($selector =~ m/(\S+):.+/) {
+			$selector = $1;
+		}
+
+		if ($selector =~ m/^\#.+/) {
+			process_css_id($name, $selector);
+			next;
+		}
+
+		if ($selector =~ m/^\..+/) {
+			process_css_class($name, $selector);
+			next;
+		}
+
+		process_css_entity($name, $selector);
+	}
+
+}
+
+sub	process_css_body {
+	my($name, $body) = @_;
+
+	# print "$name\tcss body\t$body\n";
+}
+
+sub	process_css_id {
+	my($name, $selector) = @_;
+
+	print "$name\tcss id\t$selector\n";
+}
+
+sub	process_css_class {
+	my($name, $selector) = @_;
+
+	print "$name\tcss class\t$selector\n";
+}
+
+sub	process_css_entity {
+	my($name, $selector) = @_;
+
+	print "$name\tcss entity\t$selector\n";
 }
