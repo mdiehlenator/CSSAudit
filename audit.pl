@@ -34,27 +34,23 @@ sub parse_params {
 	my(@a) = @_;
 	my($first);
 
-	$first = 1;
+	$first = $a[0];
+
+	if (-f $first) {
+		$SCAN_TYPE = "file";
+	}
+
+	if (-d $first) {
+		$SCAN_TYPE = "dir";
+	}
+
+	if ($SCAN_TYPE eq "") {
+		$SCAN_TYPE = "url";
+	}
+
+	push(@STACK, $first);
 
 	foreach my $i (@a) {
-
-		if ($first == 1) {
-			$first = 0;
-			push(@STACK, $i);
-
-			if (-f $i) {
-				$SCAN_TYPE = "file";
-				next;
-			}
-
-			if (-d $i) {
-				$SCAN_TYPE = "dir";
-				next;
-			}
-
-			$SCAN_TYPE = "url";
-			next;
-		}
 
 		if ($i eq "-follow") {
 			$FOLLOW = 1;
@@ -91,11 +87,13 @@ sub	process_stack {
 		my($content);
 
 		if ($SCAN_TYPE eq "dir") {
-			scan_directory($item);
-			next;
+			if (-d $item) {
+				scan_directory($item);
+				next;
+			}
 		}
 
-		if ($SCAN_TYPE eq "file") {
+		if (-f $item) {
 			$content = read_file($item);
 		}
 
@@ -103,24 +101,51 @@ sub	process_stack {
 			$content = read_url($item);
 		}
 
-		#process_content($content);
+		process_content($item, $content);
 	}
 }
 
 sub	scan_directory {
 	my($item) = @_;
 
+	opendir (my $dh, $item);
+
+	while (my $f = readdir $dh) {
+		if ($f eq ".") { next; }
+		if ($f eq "..") { next; }
+
+		if (-d "${item}/$f") {
+			if ($FOLLOW == 1) {
+				scan_directory("${item}/${f}");
+			}
+			next;
+		}
+
+		push(@STACK, "${item}/$f");
+	}
 }
 
 sub	read_file {
 	my($item) = @_;
+	my($content);
 
-	print "Reading $item\n";
+	local $/;
+	open (my $fh, "<", $item) or print "Can not open $item\n";
+	$content = <$fh>;
+	close $fh;
+
+	return $content;
 }
 
 sub	read_url {
 	my($item) = @_;
 
+}
+
+sub process_content {
+	my($name, $content) = @_;
+
+	print "Processing $name\n";
 }
 
 sub	generate_report {
