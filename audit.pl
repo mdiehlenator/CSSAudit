@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
+use LWP::Simple;
 
 #################################################################################################
 
@@ -140,14 +141,46 @@ sub	read_file {
 sub	read_url {
 	my($item) = @_;
 
+	return get($item);
 }
 
 sub process_content {
 	my($name, $content) = @_;
 
 	print "Processing $name\n";
+
+	if (is_css_file($name)) {
+		process_css($name, $content);
+		return;
+	}
+
+	process_html($name, $content);
 }
 
 sub	generate_report {
 
+	return;
+}
+
+sub 	is_css_file {
+	my($name) = @_;
+
+	#TODO: This will need to be expanded in a loop.
+	if ($name =~ m/\.css$/i) {
+		return 1;
+	}
+
+	return 0;
+}
+
+sub 	process_css {
+	my($name, $content) = @_;
+
+	return 1;
+}
+
+sub 	process_html {
+	my($name, $content) = @_;
+
+	return 1;
 }
