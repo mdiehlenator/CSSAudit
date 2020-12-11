@@ -204,9 +204,11 @@ sub 	process_css {
 	my @rules = $css->cssRules;
 
 	foreach my $rule (@rules) {
-		if (ref($rule) eq "SCALAR") {
+		if (ref($rule) ne "ARRAY") {
 			process_css_selector($name, $rule->selectorText);
 			process_css_body($name, $rule->cssText);
+		} else {
+			print "X: " . ref($rule) . "\n";
 		}
 	}
 
@@ -225,6 +227,7 @@ sub	process_css_selector {
 	my($name, $selectors) = @_;
 
 	foreach my $selector (split(/\s+/, $selectors)) {
+
 		if ($selector =~ m/(\S+):.+/) {
 			$selector = $1;
 		}
